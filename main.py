@@ -34,7 +34,7 @@ def text_to_audio(text: str) -> AudioSegment:
 
 def create_silent(audio: AudioSegment) -> AudioSegment:
     duration = audio.duration_seconds
-    return AudioSegment.silent(duration=duration*1000*1.5)
+    return AudioSegment.silent(duration=duration*1000*1.45)
 
 
 with open(path) as f:

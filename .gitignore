@@ -161,3 +161,6 @@ Temporary Items
 
 # google cloud
 reading-package-account-key.json
+
+voices/*  
+!.gitkeep
