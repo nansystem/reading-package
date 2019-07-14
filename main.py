@@ -7,19 +7,18 @@ prefix = 'c1-'
 path = './list.txt'
 name = 'en-US-Wavenet-D'
 
+client = texttospeech.TextToSpeechClient()
+
+voice = texttospeech.types.VoiceSelectionParams(
+    language_code='en-US',
+    ssml_gender=texttospeech.enums.SsmlVoiceGender.NEUTRAL,
+    name=name)
+
+audio_config = texttospeech.types.AudioConfig(
+    audio_encoding=texttospeech.enums.AudioEncoding.MP3,
+    speaking_rate=0.8)
 
 def text_to_audio(text: str) -> AudioSegment:
-    client = texttospeech.TextToSpeechClient()
-
-    voice = texttospeech.types.VoiceSelectionParams(
-        language_code='en-US',
-        ssml_gender=texttospeech.enums.SsmlVoiceGender.NEUTRAL,
-        name=name)
-
-    audio_config = texttospeech.types.AudioConfig(
-        audio_encoding=texttospeech.enums.AudioEncoding.MP3,
-        speaking_rate=0.8)
-
     synthesis_input = texttospeech.types.SynthesisInput(text=text)
     response = client.synthesize_speech(synthesis_input, voice, audio_config)
 
@@ -45,6 +44,7 @@ for index, line in enumerate(lines):
 
     combined = AudioSegment.empty()
     sentences = split_into_sentences(line) if split_into_sentences(line) else [line]
+
     for index, sentence in enumerate(sentences):
         audio = text_to_audio(sentence)
         silent = create_silent(audio)

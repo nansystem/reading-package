@@ -2,13 +2,13 @@ from pydub import AudioSegment
 from google.cloud import texttospeech
 
 
-# export GOOGLE_APPLICATION_CREDENTIALS="/Users/nancy/git/pydub-for-reading-package/reading-package-account-key.json"
+# export GOOGLE_APPLICATION_CREDENTIALS="/Users/nancy/git/reading-package/reading-package-account-key.json"
 # 英文からmp3にする
 text = "A man is walking with a dog."
 
 
 # Instantiates a client
-client = texttospeech.TextToSpeechClient.from_service_account_file("/Users/nancy/git/pydub-for-reading-package/reading-package-account-key.json")
+client = texttospeech.TextToSpeechClient.from_service_account_file("/Users/nancy/git/reading-package/reading-package-account-key.json")
 
 
 """
