@@ -1,56 +1,64 @@
-from pydub import AudioSegment
-from google.cloud import texttospeech
-from split_into_sentences import split_into_sentences
+"""Generate speech audio and surround each sentence with silence."""
+
 import io
 
-prefix = 'c1-'
-path = './list.txt'
-name = 'en-US-Wavenet-D'
+from google.cloud import texttospeech
+from pydub import AudioSegment
 
-client = texttospeech.TextToSpeechClient()
+from split_into_sentences import split_into_sentences
 
-voice = texttospeech.types.VoiceSelectionParams(
-    language_code='en-US',
-    ssml_gender=texttospeech.enums.SsmlVoiceGender.NEUTRAL,
-    name=name)
+PREFIX = 'c1-'
+PATH = './list.txt'
+VOICE_NAME = 'en-US-Wavenet-D'
 
-audio_config = texttospeech.types.AudioConfig(
-    audio_encoding=texttospeech.enums.AudioEncoding.MP3,
-    speaking_rate=0.8)
 
-def text_to_audio(text: str) -> AudioSegment:
-    synthesis_input = texttospeech.types.SynthesisInput(text=text)
-    response = client.synthesize_speech(synthesis_input, voice, audio_config)
-
-    # debug
-    # filepath = f'./temp/{text}.mp3'
-    # with open(filepath, 'wb') as out:
-    #     out.write(response.audio_content)
-
-    # https: // github.com/rudolfratusinski/simple-nlp-chatbot/blob/master/chatbot.py
-    return AudioSegment.from_file(io.BytesIO(response.audio_content), format="mp3")
+def text_to_audio(client, text: str) -> AudioSegment:
+    """Synthesize one sentence and decode its MP3 response."""
+    synthesis_input = texttospeech.SynthesisInput(text=text)
+    voice = texttospeech.VoiceSelectionParams(
+        language_code='en-US',
+        ssml_gender=texttospeech.SsmlVoiceGender.NEUTRAL,
+        name=VOICE_NAME,
+    )
+    audio_config = texttospeech.AudioConfig(
+        audio_encoding=texttospeech.AudioEncoding.MP3,
+        speaking_rate=0.8,
+    )
+    response = client.synthesize_speech(
+        input=synthesis_input,
+        voice=voice,
+        audio_config=audio_config,
+    )
+    return AudioSegment.from_file(io.BytesIO(response.audio_content), format='mp3')
 
 
 def create_silent(audio: AudioSegment) -> AudioSegment:
-    duration = audio.duration_seconds
-    return AudioSegment.silent(duration=duration*1000*1.45)
+    """Create a pause sized relative to the supplied audio."""
+    return AudioSegment.silent(duration=audio.duration_seconds * 1000 * 1.45)
 
 
-with open(path) as f:
-    lines = [l.strip() for l in f.readlines() if l.strip() != '']
+def main() -> None:
+    """Read the input list and write synthesized files to voices/."""
+    client = texttospeech.TextToSpeechClient()
+    with open(PATH, encoding='utf-8') as source:
+        lines = [line.strip() for line in source if line.strip()]
 
-for index, line in enumerate(lines):
-    filename = prefix + str(index + 1).zfill(3) + '-' +  line.strip().replace('.', '').replace('/', '')
+    for line_index, line in enumerate(lines):
+        filename = (
+            PREFIX + str(line_index + 1).zfill(3) + '-' +
+            line.replace('.', '').replace('/', '')
+        )
+        combined = AudioSegment.empty()
+        sentences = split_into_sentences(line) or [line]
 
-    combined = AudioSegment.empty()
-    sentences = split_into_sentences(line) if split_into_sentences(line) else [line]
+        for sentence in sentences:
+            audio = text_to_audio(client, sentence)
+            combined += audio + create_silent(audio)
 
-    for index, sentence in enumerate(sentences):
-        audio = text_to_audio(sentence)
-        silent = create_silent(audio)
-        combined += audio + silent
+        filepath = f'./voices/{filename}.mp3'
+        combined.export(filepath, format='mp3')
+        print(f'Audio content written to {filepath}')
 
 
-    filepath = f'./voices/{filename}.mp3'
-    combined.export(filepath, format="mp3")
-    print(f'Audio content written to {filepath}')
+if __name__ == '__main__':
+    main()
